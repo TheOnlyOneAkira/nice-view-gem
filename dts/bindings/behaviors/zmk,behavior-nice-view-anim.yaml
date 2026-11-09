@@ -1,0 +1,5 @@
+description: Change l'animation de l'écran nice!view gem (moitié périphérique)
+
+compatible: "zmk,behavior-nice-view-anim"
+
+include: two_param.yaml

@@ -1,0 +1,4 @@
+config ZMK_BEHAVIOR_NICE_VIEW_ANIM
+    bool
+    default y
+    depends on DT_HAS_ZMK_BEHAVIOR_NICE_VIEW_ANIM_ENABLED

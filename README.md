@@ -78,3 +78,58 @@ Shoutout to Teenage Engineering for their [TX-6](https://teenage.engineering/pro
 As for the floating crystal, appreciation goes to the pixel wizardry of Trixelized, who graciously lent their art to this project. 💎
 
 The font, Pixel Operator, is the work of Jayvee Enaguas, kindly shared under a [Creative Commons Zero (CC0) 1.0](https://creativecommons.org/publicdomain/zero/1.0/) license. 🖋️
+
+## Fork : plusieurs animations et touche `&anim`
+
+Ce fork (branche `sofle-animations`) ajoute plusieurs animations sur l'écran
+périphérique et un behavior pour en changer depuis le clavier.
+
+### Dans le keymap
+
+```c
+#include <dt-bindings/zmk/nice_view_anim.h>
+
+/ {
+    behaviors {
+        anim: nv_anim {   // nom du nœud : 8 caractères max (split)
+            compatible = "zmk,behavior-nice-view-anim";
+            #binding-cells = <2>;
+        };
+    };
+};
+```
+
+| Binding            | Action                                   |
+| ------------------ | ---------------------------------------- |
+| `&anim ANIM_NXT`   | animation suivante                       |
+| `&anim ANIM_PRV`   | animation précédente                     |
+| `&anim ANIM_SEL 2` | animation n° 2 (ordre du registre)       |
+| `&anim ANIM_TOG`   | animation ↔ image fixe (économie batterie) |
+| `&anim ANIM_ON` / `&anim ANIM_OFF` | animation / image fixe   |
+
+La touche peut être sur n'importe quelle moitié : le central transmet la
+commande au périphérique. Le choix est mémorisé (10 s après le dernier appui).
+
+### Ajouter une animation
+
+```sh
+pip install pillow
+python tools/anim_to_c.py mon_animation.gif          # ou un dossier de PNG
+python tools/anim_to_c.py mon_animation.gif --preview  # aperçu sans rien écrire
+python tools/anim_to_c.py --remove mon_animation
+```
+
+Noir et blanc, 68 px de haut et 92 px de large au maximum (réduit sinon).
+Options : `--name`, `--duration` (ms par boucle), `--threshold`, `--invert`,
+`--x`, `--y`. L'ordre des animations est dans
+`boards/shields/nice_view_gem/assets/anim_registry.h` (modifiable à la main).
+
+Les animations de départ (`rain`, `waves`, `stars`, `cube`) sont générées par
+`tools/make_starter_animations.py --convert` (sources GIF dans `tools/animations/`).
+
+### Options Kconfig
+
+- `CONFIG_NICE_VIEW_GEM_ANIMATION_DEFAULT` : animation au premier démarrage (défaut 0).
+- `CONFIG_NICE_VIEW_GEM_ANIMATION=n` : démarrer en image fixe.
+- `CONFIG_NICE_VIEW_GEM_ANIMATION_FRAME` : image fixe affichée (1 = première, 0 = au hasard).
+- `CONFIG_NICE_VIEW_GEM_ANIMATION_MS` : durée de l'animation crystal.

@@ -40,11 +40,17 @@ config NICE_VIEW_GEM_ANIMATION
     default y
 
 config NICE_VIEW_GEM_ANIMATION_FRAME
-    int "Frame index (out of 16) to use if animation is disabled"
+    int "Frame index (1-based, 0 = random) to use if animation is disabled"
     default 0
 
+config NICE_VIEW_GEM_ANIMATION_DEFAULT
+    int "Animation shown at first boot (index in assets/anim_registry.h)"
+    default 0
+    help
+      Once changed with the &anim behavior, the choice is saved and restored.
+
 config NICE_VIEW_GEM_ANIMATION_MS
-    int "Animation length in milliseconds"
+    int "Crystal animation length in milliseconds (other animations set their own)"
     default 960
 
 config NICE_VIEW_WIDGET_STATUS
