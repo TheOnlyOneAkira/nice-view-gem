@@ -4,9 +4,12 @@ L'écran est en noir et blanc (1 bit). Chaque pixel plus sombre que le seuil
 devient "allumé" (noir, ou blanc si l'écran est inversé dans la config).
 Les zones transparentes sont considérées comme du fond.
 
-Taille : 68 pixels de haut au maximum, 92 de large (zone libre à gauche des
-infos batterie/connexion). Une image plus grande est réduite automatiquement
-en gardant ses proportions.
+Taille (écran vu à l'endroit) : 68 pixels de large au maximum, 92 de haut.
+Une image plus grande est réduite automatiquement en gardant ses proportions.
+
+Orientation : les images d'animation sont affichées sans passer par la
+rotation du canevas ; elles sont donc tournées d'un quart de tour (sens
+horaire par défaut, --rotate 270) avant conversion. Dessinez-les à l'endroit.
 
 Le script écrit boards/shields/nice_view_gem/assets/anim_<nom>.c et ajoute
 l'animation à la fin de assets/anim_registry.h (ordre = numéro ANIM_SEL).
@@ -37,7 +40,10 @@ ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "boards" / "shields" / "nice_view_gem" / "assets"
 REGISTRY = ASSETS / "anim_registry.h"
 
-MAX_W, MAX_H = 92, 68
+MAX_W, MAX_H = 68, 92  # sens de lecture de l'écran
+ROTATIONS = {0: None, 90: Image.Transpose.ROTATE_90, 180: Image.Transpose.ROTATE_180,
+             270: Image.Transpose.ROTATE_270}  # angle PIL (sens antihoraire)
+DEFAULT_ROTATE = 270  # = un quart de tour horaire
 IMAGE_EXT = {".png", ".bmp", ".gif", ".jpg", ".jpeg", ".webp"}
 
 REGISTRY_HEADER = """\
@@ -207,6 +213,8 @@ def main() -> None:
     ap.add_argument("--duration", type=int, help="durée d'une boucle en ms (défaut : celle du GIF, sinon 80 ms par image)")
     ap.add_argument("--threshold", type=int, default=128, help="seuil 0-255 : plus sombre = pixel allumé (défaut 128)")
     ap.add_argument("--invert", action="store_true", help="inverser l'image source (clair = allumé)")
+    ap.add_argument("--rotate", type=int, choices=sorted(ROTATIONS), default=DEFAULT_ROTATE,
+                    help=f"rotation PIL (antihoraire) appliquée avant conversion (défaut {DEFAULT_ROTATE} = quart de tour horaire)")
     ap.add_argument("--x", type=int, help="position horizontale (défaut : centré dans la zone libre)")
     ap.add_argument("--y", type=int, help="position verticale (défaut : centré)")
     ap.add_argument("--no-register", action="store_true", help="ne pas ajouter à anim_registry.h")
@@ -238,14 +246,17 @@ def main() -> None:
     if len(frames) > 255:
         sys.exit(f"{len(frames)} images : 255 au maximum.")
 
-    w, h = frames[0].size
-    duration = args.duration or gif_ms or 80 * len(frames)
-    x = args.x if args.x is not None else (MAX_W - w) // 2
-    y = args.y if args.y is not None else (MAX_H - h) // 2
-
     if args.preview:
         print(f"Aperçu : {preview(name, frames)}")
         return
+
+    if ROTATIONS[args.rotate] is not None:
+        frames = [f.transpose(ROTATIONS[args.rotate]) for f in frames]
+
+    w, h = frames[0].size
+    duration = args.duration or gif_ms or 80 * len(frames)
+    x = args.x if args.x is not None else (MAX_H - w) // 2
+    y = args.y if args.y is not None else (MAX_W - h) // 2  # zone d'écran : MAX_H x MAX_W une fois tournée
 
     out = write_c(name, frames, duration, x, y, args.sources[0].name)
     size = len(frames) * (8 + ((w + 7) // 8) * h)
